@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "CesarApp",
-    "slug": "CesarApp",
+    "name": "CypherApp",
+    "slug": "CypherApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cesarapp",
+    "scheme": "cypherapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
