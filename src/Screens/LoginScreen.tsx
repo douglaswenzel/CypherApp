@@ -1,7 +1,6 @@
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-
-import { useRouter } from 'expo-router';
 
 import {
   Surface,
@@ -9,12 +8,12 @@ import {
   TextInput,
 } from 'react-native-paper';
 
-import database from '../database/database.json';
 
 import { AppButton } from '../components/AppButton';
 import { AppInput } from '../components/AppInput';
 import { ErrorModal } from '../components/ErrorModal';
 
+import { loginService } from '../services/auth.service';
 import { COLORS } from '../theme/colors';
 
 export default function LoginScreen() {
@@ -32,18 +31,21 @@ export default function LoginScreen() {
   const [errorMessage, setErrorMessage] =
     useState('');
 
-  const handleLogin = () => {
-    const user = database.users.find(
-      (u: any) =>
-        u.username === username &&
-        u.password === password
-    );
+  const handleLogin = async () => {
+    try {
+      const response =
+        await loginService({
+          username,
+          password,
+        });
 
-    if (user) {
+      console.log(response);
+
       router.replace('/encrypt');
-    } else {
+    } catch (error: any) {
       setErrorMessage(
-        'Usuário ou senha incorretos.'
+        error?.response?.data?.error ||
+          'Erro ao realizar login.'
       );
 
       setModalVisible(true);
@@ -64,7 +66,7 @@ export default function LoginScreen() {
           variant="bodyMedium"
           style={styles.subtitle}
         >
-          Segurança e criptografia minimalista
+          Fatec Votorantim
         </Text>
 
         <AppInput
