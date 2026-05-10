@@ -1,132 +1,111 @@
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
-import { Button, Card, HelperText, Surface, Text, TextInput } from 'react-native-paper';
-import { ErrorModal } from '../components/ErrorModal';
-import database from '../database/database.json';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { Button, Card, Surface, Text, TextInput } from 'react-native-paper';
 
-interface HashEntry {
-  hash: string;
-  step: number;
-  used: boolean;
-}
-
-interface DatabaseType {
-  hashes: HashEntry[];
-  users: any[];
-}
+import { decryptService } from '../services/decrypt.service';
 
 export default function DecryptScreen() {
-  const [encryptedMessage, setEncryptedMessage] = useState('');
-  const [hashInput, setHashInput] = useState('');
+  const [encryptedText, setEncryptedText] = useState('');
+  const [hash, setHash] = useState('');
   const [decryptedText, setDecryptedText] = useState('');
-  const [modalVisible, setModalVisible] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [error, setError] = useState('');
 
   const router = useRouter();
 
-  const handleDecrypt = () => {
-    const db = database as DatabaseType;
+  const handleDecrypt = async () => {
+    try {
+      setError('');
+      setDecryptedText('');
 
-    const hashData = db.hashes.find(
-      h => h.hash === hashInput.toUpperCase()
-    );
+      const response = await decryptService({
+        encryptedText,
+        hash,
+      });
 
-    if (!hashData) {
-      setErrorMessage('Chave (Hash) não encontrada no sistema.');
-      setModalVisible(true);
-      return;
+      setDecryptedText(response.decryptedText);
+    } catch (error: any) {
+      console.log(error?.response?.data);
+
+      if (error?.response?.status === 400) {
+        setError(
+          error?.response?.data?.message ||
+            'Hash já utilizado ou inválido.'
+        );
+
+        return;
+      }
+
+      setError('Erro ao descriptografar.');
     }
-
-    if (hashData.used) {
-      setErrorMessage('Este hash já foi utilizado e não é mais válido.');
-      setModalVisible(true);
-      return;
-    }
-
-    const shift = hashData.step * -1;
-    const alphabet = 'abcdefghijklmnopqrstuvwxyz0123456789'.split('');
-
-    const decrypted = encryptedMessage
-      .toLowerCase()
-      .split('')
-      .map(char => {
-        const index = alphabet.indexOf(char);
-
-        if (index === -1) return char;
-
-        let newIndex = (index + shift) % alphabet.length;
-
-        if (newIndex < 0) {
-          newIndex += alphabet.length;
-        }
-
-        return alphabet[newIndex];
-      })
-      .join('');
-
-    hashData.used = true;
-
-    setDecryptedText(decrypted);
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Surface style={styles.card} elevation={1}>
         <Text variant="headlineSmall" style={styles.title}>
-          Descriptografar
+          Descriptografar Mensagem
         </Text>
 
         <TextInput
           label="Mensagem Criptografada"
           mode="outlined"
-          value={encryptedMessage}
-          onChangeText={setEncryptedMessage}
+          multiline
+          numberOfLines={4}
+          value={encryptedText}
+          onChangeText={setEncryptedText}
           style={styles.input}
+          placeholder="Cole aqui a mensagem criptografada"
         />
 
         <TextInput
-          label="Hash (Chave Privada)"
+          label="Hash"
           mode="outlined"
-          value={hashInput}
-          onChangeText={setHashInput}
+          value={hash}
+          onChangeText={setHash}
           style={styles.input}
-          left={<TextInput.Icon icon="key" />}
+          placeholder="Digite o hash gerado"
+          autoCapitalize="characters"
         />
 
         <Button
           mode="contained"
           onPress={handleDecrypt}
-          style={[styles.button, { backgroundColor: '#43A047' }]}
-          disabled={!encryptedMessage || !hashInput}
+          style={styles.button}
+          disabled={!encryptedText || !hash}
         >
-          Revelar Mensagem Original
+          Descriptografar
         </Button>
       </Surface>
+
+      {error ? (
+        <Text style={styles.errorText}>
+          {error}
+        </Text>
+      ) : null}
 
       {decryptedText ? (
         <Card style={styles.resultCard}>
           <Card.Content>
-            <Text variant="labelLarge" style={{ color: '#2e7d32' }}>
-              Texto Original:
+            <Text variant="labelLarge">
+              Mensagem Descriptografada:
             </Text>
 
-            <Text variant="headlineSmall" style={styles.decryptedText}>
+            <Text style={styles.resultText}>
               {decryptedText}
             </Text>
-
-            <HelperText type="info">
-              Esta chave foi invalidada e não poderá ser usada novamente.
-            </HelperText>
           </Card.Content>
         </Card>
       ) : null}
 
-      <ErrorModal
-        visible={modalVisible}
-        message={errorMessage}
-        onClose={() => setModalVisible(false)}
-      />
+      <View style={styles.footer}>
+        <Button
+          mode="text"
+          onPress={() => router.push('/encrypt')}
+        >
+          Ir para Criptografia
+        </Button>
+      </View>
     </ScrollView>
   );
 }
@@ -158,15 +137,14 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    marginBottom: 12,
-    width: '100%',
+    marginBottom: 16,
     backgroundColor: '#203126',
   },
 
   button: {
-    marginTop: 18,
-    width: '100%',
+    marginTop: 12,
     borderRadius: 14,
+    backgroundColor: '#5DBB63',
   },
 
   resultCard: {
@@ -174,16 +152,32 @@ const styles = StyleSheet.create({
     maxWidth: 520,
     marginTop: 24,
     backgroundColor: '#163222',
+    borderRadius: 22,
     borderLeftWidth: 4,
     borderLeftColor: '#5DBB63',
-    borderRadius: 22,
     borderWidth: 1,
     borderColor: '#2D4635',
   },
 
-  decryptedText: {
-    fontWeight: '700',
+  resultText: {
     marginTop: 12,
-    color: '#F5F7F5',
+    fontSize: 16,
+    color: '#fff',
+    backgroundColor: '#203126',
+    padding: 14,
+    borderRadius: 10,
+    lineHeight: 24,
+  },
+
+  errorText: {
+    color: '#ff6b6b',
+    marginTop: 20,
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 15,
+  },
+
+  footer: {
+    marginTop: 24,
   },
 });
