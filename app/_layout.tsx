@@ -1,25 +1,62 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import {
+  DarkTheme as NavigationDarkTheme,
+  ThemeProvider,
+} from '@react-navigation/native';
+
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
+import {
+  MD3DarkTheme,
+  PaperProvider,
+} from 'react-native-paper';
 
 export {
-  // Catch any errors thrown by the Layout component.
-  ErrorBoundary,
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
-  // Ensure that reloading on `/modal` keeps a back button present.
   initialRouteName: '(tabs)',
 };
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const theme = {
+  ...MD3DarkTheme,
+
+  colors: {
+    ...MD3DarkTheme.colors,
+
+    primary: '#5DBB63',
+    secondary: '#7BC47F',
+
+    background: '#0F1A14',
+    surface: '#17241C',
+    surfaceVariant: '#203126',
+
+    onSurface: '#F5F7F5',
+    onBackground: '#F5F7F5',
+
+    outline: '#2D4635',
+
+    error: '#D96C6C',
+
+    elevation: {
+      level0: 'transparent',
+      level1: '#17241C',
+      level2: '#1B2A21',
+      level3: '#203126',
+      level4: '#263B2D',
+      level5: '#2B4433',
+    },
+  },
+
+  roundness: 5,
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -27,7 +64,6 @@ export default function RootLayout() {
     ...FontAwesome.font,
   });
 
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
   useEffect(() => {
     if (error) throw error;
   }, [error]);
@@ -46,14 +82,42 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
-    </ThemeProvider>
+    <PaperProvider theme={theme}>
+      <ThemeProvider value={NavigationDarkTheme}>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: '#17241C',
+            },
+
+            headerTintColor: '#F5F7F5',
+
+            headerTitleStyle: {
+              fontWeight: '700',
+            },
+
+            contentStyle: {
+              backgroundColor: '#0F1A14',
+            },
+
+            animation: 'fade',
+          }}
+        >
+          <Stack.Screen
+            name="(tabs)"
+            options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
+            name="modal"
+            options={{
+              presentation: 'modal',
+              title: 'CypherApp',
+            }}
+          />
+        </Stack>
+      </ThemeProvider>
+    </PaperProvider>
   );
 }
