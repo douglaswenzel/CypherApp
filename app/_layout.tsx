@@ -17,7 +17,7 @@ import { useAuthStore } from "../src/store/auth.store";
 export { ErrorBoundary } from "expo-router";
 
 export const unstable_settings = {
-  initialRouteName: "(tabs)",
+  initialRouteName: "login",
 };
 
 SplashScreen.preventAutoHideAsync();
@@ -82,15 +82,15 @@ function RootLayoutNav() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const segments = useSegments();
 
-  const inAuthGroup = segments[0] === "(tabs)";
+  const inLoginRoute = segments[0] === "login";
   const inProtectedRoute =
     segments[0] === "encrypt" || segments[0] === "decrypt";
 
   if (!isAuthenticated && inProtectedRoute) {
-    return <Redirect href="/(tabs)" />;
+    return <Redirect href="/login" />;
   }
 
-  if (isAuthenticated && inAuthGroup) {
+  if (isAuthenticated && inLoginRoute) {
     return <Redirect href="/encrypt" />;
   }
 
@@ -116,7 +116,7 @@ function RootLayoutNav() {
             animation: "fade",
           }}
         >
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="login" options={{ headerShown: false }} />
 
           <Stack.Screen
             name="encrypt"
