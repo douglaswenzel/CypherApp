@@ -1,71 +1,41 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 
-import {
-  Surface,
-  Text,
-  TextInput,
-} from 'react-native-paper';
+import { Surface, Text, TextInput } from "react-native-paper";
 
-
-import { AppButton } from '../components/AppButton';
-import { AppInput } from '../components/AppInput';
-import { ErrorModal } from '../components/ErrorModal';
-
-import { loginService } from '../services/auth.service';
-import { COLORS } from '../theme/colors';
+import { AppButton } from "../components/AppButton";
+import { AppInput } from "../components/AppInput";
+import { ErrorModal } from "../components/ErrorModal";
+import { useAuthStore } from "../store/auth.store";
+import { COLORS } from "../theme/colors";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login, isLoading, error, clearError } = useAuthStore();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [modalVisible, setModalVisible] =
-    useState(false);
-
-  const [errorMessage, setErrorMessage] =
-    useState('');
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async () => {
     try {
-      const response =
-        await loginService({
-          username,
-          password,
-        });
-
-      console.log(response);
-
-      router.replace('/encrypt');
-    } catch (error: any) {
-      setErrorMessage(
-        error?.response?.data?.error ||
-          'Erro ao realizar login.'
-      );
-
-      setModalVisible(true);
+      await login(username, password);
+      router.replace("/encrypt");
+    } catch {
+      // erro já está no store via `error`
     }
   };
 
   return (
     <View style={styles.container}>
       <Surface style={styles.card} elevation={2}>
-        <Text
-          variant="headlineMedium"
-          style={styles.title}
-        >
+        <Text variant="headlineMedium" style={styles.title}>
           CypherApp
         </Text>
 
-        <Text
-          variant="bodyMedium"
-          style={styles.subtitle}
-        >
+        <Text variant="bodyMedium" style={styles.subtitle}>
           Fatec Votorantim
         </Text>
 
@@ -73,9 +43,7 @@ export default function LoginScreen() {
           label="Usuário"
           value={username}
           onChangeText={setUsername}
-          left={
-            <TextInput.Icon icon="account" />
-          }
+          left={<TextInput.Icon icon="account" />}
         />
 
         <AppInput
@@ -83,39 +51,28 @@ export default function LoginScreen() {
           secureTextEntry={!showPassword}
           value={password}
           onChangeText={setPassword}
-          left={
-            <TextInput.Icon icon="lock" />
-          }
+          left={<TextInput.Icon icon="lock" />}
           right={
             <TextInput.Icon
-              icon={
-                showPassword
-                  ? 'eye-off'
-                  : 'eye'
-              }
-              onPress={() =>
-                setShowPassword(
-                  !showPassword
-                )
-              }
+              icon={showPassword ? "eye-off" : "eye"}
+              onPress={() => setShowPassword(!showPassword)}
             />
           }
         />
 
         <AppButton
           onPress={handleLogin}
-          disabled={!username || !password}
+          disabled={!username || !password || isLoading}
+          loading={isLoading}
         >
           Entrar
         </AppButton>
       </Surface>
 
       <ErrorModal
-        visible={modalVisible}
-        message={errorMessage}
-        onClose={() =>
-          setModalVisible(false)
-        }
+        visible={!!error}
+        message={error ?? ""}
+        onClose={clearError}
       />
     </View>
   );
@@ -125,8 +82,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
 
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
 
     backgroundColor: COLORS.background,
 
@@ -134,7 +91,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 420,
 
     padding: 28,
@@ -148,11 +105,11 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    textAlign: 'center',
+    textAlign: "center",
 
     color: COLORS.primary,
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     marginBottom: 8,
 
@@ -160,7 +117,7 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
 
     color: COLORS.textSecondary,
 
