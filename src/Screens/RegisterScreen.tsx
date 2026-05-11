@@ -25,8 +25,6 @@ export default function RegisterScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const [successModalVisible, setSuccessModalVisible] = useState(false);
-
   const isFormValid =
     username.trim().length > 0 &&
     password.length > 0 &&
