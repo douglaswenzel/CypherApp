@@ -1,7 +1,6 @@
-import * as Clipboard from 'expo-clipboard';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import * as Clipboard from "expo-clipboard";
+import { useRouter } from "expo-router";
+import { ScrollView, StyleSheet, View } from "react-native";
 
 import {
   Button,
@@ -11,83 +10,57 @@ import {
   Surface,
   Text,
   TextInput,
-} from 'react-native-paper';
+} from "react-native-paper";
 
-import { encryptService } from '../services/encrypt.service';
+import { useEncryptStore } from "../store/cypher.store";
 
 export default function EncryptScreen() {
-  const [message, setMessage] = useState('');
-  const [step, setStep] = useState('');
-  const [resultHash, setResultHash] =
-    useState('');
-
-  const [encryptedText, setEncryptedText] =
-    useState('');
+  const {
+    message,
+    step,
+    encryptedText,
+    hash: resultHash,
+    isLoading,
+    error,
+    setMessage,
+    setStep,
+    encrypt,
+    clearError,
+  } = useEncryptStore();
 
   const router = useRouter();
 
-  const copyToClipboard = async (
-    text: string
-  ) => {
+  const copyToClipboard = async (text: string) => {
     await Clipboard.setStringAsync(text);
   };
 
   const handleEncrypt = async () => {
+    if (!message.trim()) {
+      alert("Digite uma mensagem");
+      return;
+    }
+
+    if (step === "") {
+      alert("Digite um STEP válido");
+      return;
+    }
+
+    if (isNaN(Number(step))) {
+      alert("O STEP precisa ser numérico");
+      return;
+    }
+
     try {
-      if (!message.trim()) {
-        alert('Digite uma mensagem');
-        return;
-      }
-
-      if (step === '' || step === null || step === undefined) {
-        alert('Digite um STEP válido');
-        return;
-      }
-
-      const numericStep = Number(step);
-
-      if (isNaN(numericStep)) {
-        alert('O STEP precisa ser numérico');
-        return;
-      }
-
-      const response = await encryptService({
-        message,
-        step: numericStep,
-      });
-
-      setEncryptedText(response.encryptedText);
-      setResultHash(response.hash);
-
-    } catch (error: any) {
-      console.log(error?.response?.data);
-
-      const backendMessage =
-        error?.response?.data?.error ||
-        error?.response?.data?.message;
-
-      if (backendMessage) {
-        alert(backendMessage);
-      } else {
-        alert('Erro ao criptografar');
-      }
+      await encrypt();
+    } catch {
+      if (error) alert(error);
     }
   };
 
   return (
-    <ScrollView
-      contentContainerStyle={
-        styles.container
-      }
-    >
-      <Surface
-        style={styles.card}
-        elevation={1}
-      >
-        <Text
-          variant="headlineSmall"
-          style={styles.title}
-        >
+    <ScrollView contentContainerStyle={styles.container}>
+      <Surface style={styles.card} elevation={1}>
+        <Text variant="headlineSmall" style={styles.title}>
           Criptografar Mensagem
         </Text>
 
@@ -105,8 +78,7 @@ export default function EncryptScreen() {
           activeOutlineColor="#5DBB63"
           theme={{
             colors: {
-              onSurfaceVariant:
-                '#9FB5A3',
+              onSurfaceVariant: "#9FB5A3",
             },
           }}
         />
@@ -124,35 +96,23 @@ export default function EncryptScreen() {
           activeOutlineColor="#5DBB63"
           theme={{
             colors: {
-              onSurfaceVariant:
-                '#9FB5A3',
+              onSurfaceVariant: "#9FB5A3",
             },
           }}
-          left={
-            <TextInput.Icon
-              icon="numeric"
-            />
-          }
+          left={<TextInput.Icon icon="numeric" />}
         />
 
-        <HelperText
-          type="info"
-          style={styles.helper}
-        >
-          Número de casas para
-          deslocar (a-z, 0-9).
+        <HelperText type="info" style={styles.helper}>
+          Número de casas para deslocar (a-z, 0-9).
         </HelperText>
 
         <Button
           mode="contained"
           onPress={handleEncrypt}
           style={styles.button}
-          labelStyle={
-            styles.buttonLabel
-          }
-          disabled={
-            !message || !step
-          }
+          labelStyle={styles.buttonLabel}
+          disabled={!message || !step || isLoading}
+          loading={isLoading}
         >
           Gerar Cifra e Hash
         </Button>
@@ -161,83 +121,40 @@ export default function EncryptScreen() {
       {resultHash ? (
         <Card style={styles.resultCard}>
           <Card.Content>
-            <Text
-              variant="labelLarge"
-              style={
-                styles.sectionTitle
-              }
-            >
-              Mensagem
-              Criptografada
+            <Text variant="labelLarge" style={styles.sectionTitle}>
+              Mensagem Criptografada
             </Text>
 
-            <View
-              style={
-                styles.copyContainer
-              }
-            >
-              <Text
-                style={styles.codeText}
-              >
-                {encryptedText}
-              </Text>
+            <View style={styles.copyContainer}>
+              <Text style={styles.codeText}>{encryptedText}</Text>
 
               <IconButton
                 icon="content-copy"
                 size={20}
                 iconColor="#B7E4C7"
-                onPress={() =>
-                  copyToClipboard(
-                    encryptedText
-                  )
-                }
+                onPress={() => copyToClipboard(encryptedText)}
               />
             </View>
 
-            <View
-              style={styles.divider}
-            />
+            <View style={styles.divider} />
 
-            <Text
-              variant="labelLarge"
-              style={
-                styles.hashLabel
-              }
-            >
+            <Text variant="labelLarge" style={styles.hashLabel}>
               Chave Privada
             </Text>
 
-            <View
-              style={
-                styles.copyContainer
-              }
-            >
-              <Text
-                style={styles.hashText}
-              >
-                {resultHash}
-              </Text>
+            <View style={styles.copyContainer}>
+              <Text style={styles.hashText}>{resultHash}</Text>
 
               <IconButton
                 icon="content-copy"
                 size={20}
                 iconColor="#B7E4C7"
-                onPress={() =>
-                  copyToClipboard(
-                    resultHash
-                  )
-                }
+                onPress={() => copyToClipboard(resultHash)}
               />
             </View>
 
-            <Text
-              style={
-                styles.warningText
-              }
-            >
-              Guarde este hash.
-              Ele poderá ser usado
-              apenas uma vez.
+            <Text style={styles.warningText}>
+              Guarde este hash. Ele poderá ser usado apenas uma vez.
             </Text>
           </Card.Content>
         </Card>
@@ -245,9 +162,7 @@ export default function EncryptScreen() {
 
       <Button
         mode="text"
-        onPress={() =>
-          router.push('/decrypt')
-        }
+        onPress={() => router.push("/decrypt")}
         style={styles.link}
         labelStyle={styles.linkText}
       >
@@ -263,13 +178,13 @@ const styles = StyleSheet.create({
 
     padding: 24,
 
-    backgroundColor: '#0F1A14',
+    backgroundColor: "#0F1A14",
 
-    alignItems: 'center',
+    alignItems: "center",
   },
 
   card: {
-    width: '100%',
+    width: "100%",
 
     maxWidth: 520,
 
@@ -277,11 +192,11 @@ const styles = StyleSheet.create({
 
     borderRadius: 24,
 
-    backgroundColor: '#17241C',
+    backgroundColor: "#17241C",
 
     borderWidth: 1,
 
-    borderColor: '#2D4635',
+    borderColor: "#2D4635",
 
     marginBottom: 20,
   },
@@ -289,11 +204,11 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 24,
 
-    textAlign: 'center',
+    textAlign: "center",
 
-    fontWeight: '700',
+    fontWeight: "700",
 
-    color: '#5DBB63',
+    color: "#5DBB63",
 
     letterSpacing: 0.5,
   },
@@ -301,11 +216,11 @@ const styles = StyleSheet.create({
   input: {
     marginBottom: 12,
 
-    backgroundColor: '#203126',
+    backgroundColor: "#203126",
   },
 
   helper: {
-    color: '#9FB5A3',
+    color: "#9FB5A3",
   },
 
   button: {
@@ -313,58 +228,57 @@ const styles = StyleSheet.create({
 
     borderRadius: 14,
 
-    backgroundColor: '#5DBB63',
+    backgroundColor: "#5DBB63",
   },
 
   buttonLabel: {
-    color: '#081C15',
+    color: "#081C15",
 
-    fontWeight: '700',
+    fontWeight: "700",
   },
 
   resultCard: {
-    width: '100%',
+    width: "100%",
 
     maxWidth: 520,
 
-    backgroundColor: '#163222',
+    backgroundColor: "#163222",
 
     borderRadius: 22,
 
     borderLeftWidth: 4,
 
-    borderLeftColor: '#5DBB63',
+    borderLeftColor: "#5DBB63",
 
     borderWidth: 1,
 
-    borderColor: '#2D4635',
+    borderColor: "#2D4635",
   },
 
   sectionTitle: {
-    color: '#B7E4C7',
+    color: "#B7E4C7",
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     marginBottom: 8,
   },
 
   hashLabel: {
-    color: '#95D5B2',
+    color: "#95D5B2",
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     marginBottom: 8,
   },
 
   copyContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
 
-    alignItems: 'center',
+    alignItems: "center",
 
-    justifyContent:
-      'space-between',
+    justifyContent: "space-between",
 
-    backgroundColor: '#1B4332',
+    backgroundColor: "#1B4332",
 
     borderRadius: 14,
 
@@ -378,7 +292,7 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
 
-    backgroundColor: '#2D4635',
+    backgroundColor: "#2D4635",
 
     marginVertical: 18,
   },
@@ -386,9 +300,9 @@ const styles = StyleSheet.create({
   codeText: {
     flex: 1,
 
-    color: '#F5F7F5',
+    color: "#F5F7F5",
 
-    fontFamily: 'monospace',
+    fontFamily: "monospace",
 
     fontSize: 15,
 
@@ -398,9 +312,9 @@ const styles = StyleSheet.create({
   hashText: {
     flex: 1,
 
-    color: '#F1FAEE',
+    color: "#F1FAEE",
 
-    fontWeight: '700',
+    fontWeight: "700",
 
     letterSpacing: 2,
 
@@ -410,7 +324,7 @@ const styles = StyleSheet.create({
   },
 
   warningText: {
-    color: '#D8F3DC',
+    color: "#D8F3DC",
 
     marginTop: 12,
 
@@ -424,6 +338,6 @@ const styles = StyleSheet.create({
   },
 
   linkText: {
-    color: '#5DBB63',
+    color: "#5DBB63",
   },
 });
