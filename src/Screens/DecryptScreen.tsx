@@ -1,42 +1,49 @@
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Card, Surface, Text, TextInput } from 'react-native-paper';
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useNavigation, useRouter } from "expo-router";
+import { useLayoutEffect } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Button, Card, Surface, Text, TextInput } from "react-native-paper";
 
-import { decryptService } from '../services/decrypt.service';
+import { useAuthStore } from "../store/auth.store";
+import { useDecryptStore } from "../store/cypher.store";
 
 export default function DecryptScreen() {
-  const [encryptedText, setEncryptedText] = useState('');
-  const [hash, setHash] = useState('');
-  const [decryptedText, setDecryptedText] = useState('');
-  const [error, setError] = useState('');
+  const navigation = useNavigation();
+  const logout = useAuthStore((s) => s.logout);
+  const {
+    encryptedText,
+    hash,
+    decryptedText,
+    isLoading,
+    error,
+    setEncryptedText,
+    setHash,
+    decrypt,
+  } = useDecryptStore();
 
   const router = useRouter();
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            logout();
+            router.replace("/login");
+          }}
+          style={{ marginRight: 16 }}
+        >
+          <FontAwesome name="sign-out" size={22} color="#F5F7F5" />
+        </TouchableOpacity>
+      ),
+    });
+  }, []);
+
   const handleDecrypt = async () => {
     try {
-      setError('');
-      setDecryptedText('');
-
-      const response = await decryptService({
-        encryptedText,
-        hash,
-      });
-
-      setDecryptedText(response.decryptedText);
-    } catch (error: any) {
-      console.log(error?.response?.data);
-
-      if (error?.response?.status === 400) {
-        setError(
-          error?.response?.data?.message ||
-            'Hash já utilizado ou inválido.'
-        );
-
-        return;
-      }
-
-      setError('Erro ao descriptografar.');
+      await decrypt();
+    } catch {
+      // erro já está no store via `error`
     }
   };
 
@@ -72,37 +79,27 @@ export default function DecryptScreen() {
           mode="contained"
           onPress={handleDecrypt}
           style={styles.button}
-          disabled={!encryptedText || !hash}
+          disabled={!encryptedText || !hash || isLoading}
+          loading={isLoading}
         >
           Descriptografar
         </Button>
       </Surface>
 
-      {error ? (
-        <Text style={styles.errorText}>
-          {error}
-        </Text>
-      ) : null}
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
       {decryptedText ? (
         <Card style={styles.resultCard}>
           <Card.Content>
-            <Text variant="labelLarge">
-              Mensagem Descriptografada:
-            </Text>
+            <Text variant="labelLarge">Mensagem Descriptografada:</Text>
 
-            <Text style={styles.resultText}>
-              {decryptedText}
-            </Text>
+            <Text style={styles.resultText}>{decryptedText}</Text>
           </Card.Content>
         </Card>
       ) : null}
 
       <View style={styles.footer}>
-        <Button
-          mode="text"
-          onPress={() => router.push('/encrypt')}
-        >
+        <Button mode="text" onPress={() => router.push("/encrypt")}>
           Ir para Criptografia
         </Button>
       </View>
@@ -114,66 +111,66 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: 24,
-    backgroundColor: '#0F1A14',
-    alignItems: 'center',
+    backgroundColor: "#0F1A14",
+    alignItems: "center",
   },
 
   card: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
     padding: 24,
     borderRadius: 24,
-    backgroundColor: '#17241C',
+    backgroundColor: "#17241C",
     borderWidth: 1,
-    borderColor: '#2D4635',
+    borderColor: "#2D4635",
   },
 
   title: {
     marginBottom: 24,
-    textAlign: 'center',
-    fontWeight: '700',
-    color: '#5DBB63',
+    textAlign: "center",
+    fontWeight: "700",
+    color: "#5DBB63",
     letterSpacing: 0.5,
   },
 
   input: {
     marginBottom: 16,
-    backgroundColor: '#203126',
+    backgroundColor: "#203126",
   },
 
   button: {
     marginTop: 12,
     borderRadius: 14,
-    backgroundColor: '#5DBB63',
+    backgroundColor: "#5DBB63",
   },
 
   resultCard: {
-    width: '100%',
+    width: "100%",
     maxWidth: 520,
     marginTop: 24,
-    backgroundColor: '#163222',
+    backgroundColor: "#163222",
     borderRadius: 22,
     borderLeftWidth: 4,
-    borderLeftColor: '#5DBB63',
+    borderLeftColor: "#5DBB63",
     borderWidth: 1,
-    borderColor: '#2D4635',
+    borderColor: "#2D4635",
   },
 
   resultText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#fff',
-    backgroundColor: '#203126',
+    color: "#fff",
+    backgroundColor: "#203126",
     padding: 14,
     borderRadius: 10,
     lineHeight: 24,
   },
 
   errorText: {
-    color: '#ff6b6b',
+    color: "#ff6b6b",
     marginTop: 20,
-    textAlign: 'center',
-    fontWeight: '600',
+    textAlign: "center",
+    fontWeight: "600",
     fontSize: 15,
   },
 
