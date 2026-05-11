@@ -1,6 +1,8 @@
+import FontAwesome from "@expo/vector-icons/FontAwesome";
 import * as Clipboard from "expo-clipboard";
-import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { useNavigation, useRouter } from "expo-router";
+import { useLayoutEffect } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 
 import {
   Button,
@@ -12,9 +14,12 @@ import {
   TextInput,
 } from "react-native-paper";
 
+import { useAuthStore } from "../store/auth.store";
 import { useEncryptStore } from "../store/cypher.store";
 
 export default function EncryptScreen() {
+  const navigation = useNavigation();
+  const logout = useAuthStore((s) => s.logout);
   const {
     message,
     step,
@@ -29,6 +34,22 @@ export default function EncryptScreen() {
   } = useEncryptStore();
 
   const router = useRouter();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            logout();
+            router.replace("/login");
+          }}
+          style={{ marginRight: 16 }}
+        >
+          <FontAwesome name="sign-out" size={22} color="#F5F7F5" />
+        </TouchableOpacity>
+      ),
+    });
+  }, []);
 
   const copyToClipboard = async (text: string) => {
     await Clipboard.setStringAsync(text);
