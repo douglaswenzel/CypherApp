@@ -1,10 +1,15 @@
-import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, View } from "react-native";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useNavigation, useRouter } from "expo-router";
+import { useLayoutEffect } from "react";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { Button, Card, Surface, Text, TextInput } from "react-native-paper";
 
+import { useAuthStore } from "../store/auth.store";
 import { useDecryptStore } from "../store/cypher.store";
 
 export default function DecryptScreen() {
+  const navigation = useNavigation();
+  const logout = useAuthStore((s) => s.logout);
   const {
     encryptedText,
     hash,
@@ -17,6 +22,22 @@ export default function DecryptScreen() {
   } = useDecryptStore();
 
   const router = useRouter();
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            logout();
+            router.replace("/login");
+          }}
+          style={{ marginRight: 16 }}
+        >
+          <FontAwesome name="sign-out" size={22} color="#F5F7F5" />
+        </TouchableOpacity>
+      ),
+    });
+  }, []);
 
   const handleDecrypt = async () => {
     try {
