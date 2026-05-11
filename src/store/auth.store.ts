@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "expo-zustand-persist";
 import { api } from "../services/api";
 
 interface User {
@@ -33,18 +33,14 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await api.post("/auth/login", {
-            username,
-            password,
-          });
+          const response = await api.post("/auth/login", { username, password });
           const { token, user } = response.data;
 
           api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
           set({ token, user, isAuthenticated: true, isLoading: false });
         } catch (err: any) {
-          const message =
-            err?.response?.data?.error || "Erro ao realizar login.";
+          const message = err?.response?.data?.error || "Erro ao realizar login.";
 
           set({ error: message, isLoading: false });
           throw err;
@@ -61,17 +57,12 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "auth-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      // @ts-ignore
       partialize: (state) => ({
         token: state.token,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state?.token) {
-          api.defaults.headers.common["Authorization"] =
-            `Bearer ${state.token}`;
-        }
-      },
     },
   ),
 );
