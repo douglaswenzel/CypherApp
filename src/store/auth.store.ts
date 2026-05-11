@@ -1,4 +1,6 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 import { api } from "../services/api";
 
 interface User {
@@ -18,35 +20,58 @@ interface AuthState {
   clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  token: null,
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      token: null,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
 
-  login: async (username, password) => {
-    set({ isLoading: true, error: null });
+      login: async (username, password) => {
+        set({ isLoading: true, error: null });
 
-    try {
-      const response = await api.post("/auth/login", { username, password });
-      const { token, user } = response.data;
+        try {
+          const response = await api.post("/auth/login", {
+            username,
+            password,
+          });
+          const { token, user } = response.data;
 
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      set({ token, user, isAuthenticated: true, isLoading: false });
-    } catch (err: any) {
-      const message = err?.response?.data?.error || "Erro ao realizar login.";
+          set({ token, user, isAuthenticated: true, isLoading: false });
+        } catch (err: any) {
+          const message =
+            err?.response?.data?.error || "Erro ao realizar login.";
 
-      set({ error: message, isLoading: false });
-      throw err;
-    }
-  },
+          set({ error: message, isLoading: false });
+          throw err;
+        }
+      },
 
-  logout: () => {
-    delete api.defaults.headers.common["Authorization"];
-    set({ token: null, user: null, isAuthenticated: false, error: null });
-  },
+      logout: () => {
+        delete api.defaults.headers.common["Authorization"];
+        set({ token: null, user: null, isAuthenticated: false, error: null });
+      },
 
-  clearError: () => set({ error: null }),
-}));
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: "auth-storage",
+      storage: createJSONStorage(() => AsyncStorage),
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+      onRehydrateStorage: () => (state) => {
+        if (state?.token) {
+          api.defaults.headers.common["Authorization"] =
+            `Bearer ${state.token}`;
+        }
+      },
+    },
+  ),
+);
