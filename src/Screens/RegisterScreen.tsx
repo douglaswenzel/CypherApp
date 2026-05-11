@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 
 import { Surface, Text, TextInput } from "react-native-paper";
@@ -7,24 +7,48 @@ import { Surface, Text, TextInput } from "react-native-paper";
 import { AppButton } from "../components/AppButton";
 import { AppInput } from "../components/AppInput";
 import { ErrorModal } from "../components/ErrorModal";
+
 import { useAuthStore } from "../store/auth.store";
 import { COLORS } from "../theme/colors";
 
-export default function LoginScreen() {
+export default function RegisterScreen() {
   const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuthStore();
+  const { register, isLoading, error: storeError, clearError } = useAuthStore();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleLogin = async () => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const isFormValid =
+    username.trim().length > 0 &&
+    password.length > 0 &&
+    confirmPassword.length > 0;
+
+  const handleRegister = async () => {
+    if (password !== confirmPassword) {
+      setErrorMessage("As senhas não coincidem.");
+      setModalVisible(true);
+      return;
+    }
+
+    if (password.length < 6) {
+      setErrorMessage("A senha deve ter pelo menos 6 caracteres.");
+      setModalVisible(true);
+      return;
+    }
+
     try {
-      await login(username, password);
-      router.replace("/encrypt");
+      await register(username, password);
+      router.replace("/login");
     } catch {
-      // erro já está no store via `error`
+      setErrorMessage(storeError || "Erro ao realizar cadastro.");
+      setModalVisible(true);
     }
   };
 
@@ -32,17 +56,18 @@ export default function LoginScreen() {
     <View style={styles.container}>
       <Surface style={styles.card} elevation={2}>
         <Text variant="headlineMedium" style={styles.title}>
-          CypherApp
+          Criar Conta
         </Text>
 
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Fatec Votorantim
+          Preencha os dados para se cadastrar
         </Text>
 
         <AppInput
           label="Usuário"
           value={username}
           onChangeText={setUsername}
+          autoCapitalize="none"
           left={<TextInput.Icon icon="account" />}
         />
 
@@ -60,29 +85,39 @@ export default function LoginScreen() {
           }
         />
 
-        <AppButton
-          onPress={handleLogin}
-          disabled={!username || !password || isLoading}
-          loading={isLoading}
-        >
-          Entrar
+        <AppInput
+          label="Confirmar Senha"
+          secureTextEntry={!showConfirmPassword}
+          value={confirmPassword}
+          onChangeText={setConfirmPassword}
+          left={<TextInput.Icon icon="lock-check" />}
+          right={
+            <TextInput.Icon
+              icon={showConfirmPassword ? "eye-off" : "eye"}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            />
+          }
+        />
+
+        <AppButton onPress={handleRegister} disabled={!isFormValid}>
+          Cadastrar
         </AppButton>
+
+        <TouchableOpacity
+          style={styles.loginLink}
+          onPress={() => router.replace("/login")}
+        >
+          <Text style={styles.loginLinkText}>
+            Já tem uma conta?{" "}
+            <Text style={styles.loginLinkHighlight}>Entrar</Text>
+          </Text>
+        </TouchableOpacity>
       </Surface>
 
-      <TouchableOpacity
-        style={styles.registerLink}
-        onPress={() => router.push("/register")}
-      >
-        <Text style={styles.registerLinkText}>
-          Não tem uma conta?{" "}
-          <Text style={styles.registerLinkHighlight}>Cadastre-se</Text>
-        </Text>
-      </TouchableOpacity>
-
       <ErrorModal
-        visible={!!error}
-        message={error ?? ""}
-        onClose={clearError}
+        visible={modalVisible}
+        message={errorMessage}
+        onClose={() => setModalVisible(false)}
       />
     </View>
   );
@@ -136,17 +171,17 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  registerLink: {
+  loginLink: {
     marginTop: 20,
     alignItems: "center",
   },
 
-  registerLinkText: {
+  loginLinkText: {
     color: COLORS.textSecondary,
     fontSize: 14,
   },
 
-  registerLinkHighlight: {
+  loginLinkHighlight: {
     color: COLORS.primary,
     fontWeight: "700",
   },

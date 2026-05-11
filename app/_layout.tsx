@@ -129,6 +129,11 @@ function RootLayoutNav() {
           <Stack.Screen name="login" options={{ headerShown: false }} />
 
           <Stack.Screen
+            name="register"
+            options={{ title: "Cadastro", headerShown: false }}
+          />
+
+          <Stack.Screen
             name="encrypt"
             options={{ title: "Criptografar", headerLeft: () => null }}
           />

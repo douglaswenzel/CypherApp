@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { create } from "zustand";
 import { createJSONStorage, persist } from "expo-zustand-persist";
+import { create } from "zustand";
 import { api } from "../services/api";
 
 interface User {
@@ -16,6 +16,7 @@ interface AuthState {
   error: string | null;
 
   login: (username: string, password: string) => Promise<void>;
+  register: (username: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
 }
@@ -33,15 +34,33 @@ export const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
 
         try {
-          const response = await api.post("/auth/login", { username, password });
+          const response = await api.post("/auth/login", {
+            username,
+            password,
+          });
           const { token, user } = response.data;
 
           api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
           set({ token, user, isAuthenticated: true, isLoading: false });
         } catch (err: any) {
-          const message = err?.response?.data?.error || "Erro ao realizar login.";
+          const message =
+            err?.response?.data?.error || "Erro ao realizar login.";
 
+          set({ error: message, isLoading: false });
+          throw err;
+        }
+      },
+
+      register: async (username, password) => {
+        set({ isLoading: true, error: null });
+
+        try {
+          await api.post("/auth/register", { username, password });
+          set({ isLoading: false });
+        } catch (err: any) {
+          const message =
+            err?.response?.data?.error || "Erro ao realizar cadastro.";
           set({ error: message, isLoading: false });
           throw err;
         }
