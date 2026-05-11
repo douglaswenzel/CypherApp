@@ -12,6 +12,7 @@ import "react-native-reanimated";
 
 import { MD3DarkTheme, PaperProvider } from "react-native-paper";
 
+import { api } from "../src/services/api";
 import { useAuthStore } from "../src/store/auth.store";
 
 export { ErrorBoundary } from "expo-router";
@@ -80,7 +81,16 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const token = useAuthStore((s) => s.token);
   const segments = useSegments();
+
+  useEffect(() => {
+    if (token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+    }
+  }, [token]);
 
   const inLoginRoute = segments[0] === "login";
   const inProtectedRoute =
