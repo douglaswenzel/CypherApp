@@ -120,10 +120,13 @@ function RootLayoutNav() {
 
           <Stack.Screen
             name="encrypt"
-            options={{ title: "Criptografar", headerBackVisible: false }}
+            options={{ title: "Criptografar", headerLeft: () => null }}
           />
 
-          <Stack.Screen name="decrypt" options={{ title: "Descriptografar" }} />
+          <Stack.Screen
+            name="decrypt"
+            options={{ title: "Descriptografar", headerLeft: () => null }}
+          />
 
           <Stack.Screen
             name="modal"
